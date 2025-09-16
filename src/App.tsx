@@ -1,10 +1,11 @@
+import { RouterProvider } from 'react-router'
 import './App.css'
-import Page from './dashboard/page'
+import { routes } from './routes'
 
 function App() {
   return (
     <>
-      <Page />
+      <RouterProvider router={routes} />
     </>
   )
 }
