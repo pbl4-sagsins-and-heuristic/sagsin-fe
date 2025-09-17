@@ -21,10 +21,10 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/",
       isActive: true,
       items: [
-        { title: "Nodes management", url: "#", isActive: true },
+        { title: "Nodes management", url: "/nodes-management", isActive: true },
         { title: "Analytics", url: "#", isActive: true },
         { title: "Reports", url: "#", isActive: true },
       ],

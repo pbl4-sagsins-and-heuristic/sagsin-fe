@@ -1,8 +1,17 @@
 import { RouterProvider } from 'react-router'
 import './App.css'
 import { routes } from './routes'
+import { SocketConnection } from './socket/socket'
+import type { Socket } from 'socket.io-client'
 
 function App() {
+  const socket : Socket = SocketConnection.getInstance();
+  socket.on('connect', () => {
+    console.log('Connected to server with id:', socket.id);
+  });
+  socket.on('node-updated', (data) => {
+    console.log('Node updated event received:', data);
+  });
   return (
     <>
       <RouterProvider router={routes} />
