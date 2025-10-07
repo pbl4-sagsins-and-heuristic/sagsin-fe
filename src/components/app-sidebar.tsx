@@ -25,7 +25,7 @@ const data = {
       isActive: true,
       items: [
         { title: "Nodes management", url: "/nodes-management", isActive: true },
-        { title: "Analytics", url: "#", isActive: true },
+        { title: "Links management", url: "/links-management", isActive: true },
         { title: "Reports", url: "#", isActive: true },
       ],
     }

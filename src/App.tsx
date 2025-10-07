@@ -9,9 +9,6 @@ function App() {
   socket.on('connect', () => {
     console.log('Connected to server with id:', socket.id);
   });
-  socket.on('node-updated', (data) => {
-    console.log('Node updated event received:', data);
-  });
   return (
     <>
       <RouterProvider router={routes} />
