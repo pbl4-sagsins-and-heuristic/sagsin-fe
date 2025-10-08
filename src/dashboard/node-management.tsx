@@ -17,8 +17,15 @@ export default function NodeManagement() {
 
   useEffect(() => {
     const socket: Socket = SocketConnection.getInstance();
-    const handleNodeUpdate = (data: any[]) => {
-      setNodes(data);
+    const handleNodeUpdate = (data: any) => {
+        setNodes((prev) => {
+          const existing = prev.find(n => n.ip === data.ip);
+          if (existing) {
+            return prev.map(n => n.ip === data.ip ? data : n);
+          } else {
+            return [...prev, data];
+      }
+        });
     };
     socket.on("node-updated", handleNodeUpdate);
     socket.emit("get-nodes");
@@ -43,7 +50,7 @@ export default function NodeManagement() {
         {filtered.length === 0 ? (
           <div className="text-muted-foreground">No nodes found.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {filtered.map((node) => (
               <NodeDetail key={node._id || node.ip} node={node} />
             ))}
