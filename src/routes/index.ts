@@ -3,6 +3,7 @@ import NodeManagement from "@/dashboard/node-management";
 import NotFound from "@/view/NotFound";
 import { createBrowserRouter } from "react-router";
 import LinkManagement from "@/dashboard/link-management";
+import AlgorithmsManagement from "@/dashboard/algorithims-management";
 
 export const routes = createBrowserRouter([
     {
@@ -16,6 +17,10 @@ export const routes = createBrowserRouter([
             {
                 path: '/links-management',
                 Component: LinkManagement
+            },
+            {
+                path: '/algorithms-management',
+                Component: AlgorithmsManagement
             }
         ]
     },
