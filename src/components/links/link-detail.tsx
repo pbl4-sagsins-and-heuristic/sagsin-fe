@@ -1,12 +1,9 @@
-import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Activity, Wifi, Clock, Zap, Signal, List, ChevronDown, ChevronRight, TrendingUp } from 'lucide-react';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import type { ChartConfig } from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
-import { useMetricsTrends } from '@/hooks/use-metrics-trends';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Wifi, Clock, Zap, Signal, List } from 'lucide-react';
+import EntityHeader from '@/components/shared/entity-header';
+import MetricCard from '@/components/shared/metric-card';
+import TrendsToggle from '@/components/shared/trends-toggle';
 
 interface LinkDetailProps {
 	link: {
@@ -16,11 +13,11 @@ interface LinkDetailProps {
 		destNodeName: string;
 		available: boolean;
 		metrics?: {
-			bandwidth_mbps?: number;
-			delay_ms?: number;
-			jitter_ms?: number;
-			loss_rate?: number | null;
-			queue_length?: number;
+			bandwidthMbps?: number;
+			delayMs?: number;
+			jitterMs?: number;
+			lossRate?: number | null;
+			queueLength?: number;
 		};
 		createdAt?: string;
 		updatedAt?: string;
@@ -32,7 +29,54 @@ export default function LinkDetail({ link }: LinkDetailProps) {
 	const [showCharts, setShowCharts] = useState(false);
 	const { srcNodeName, destNodeName, available, metrics = {}, updatedAt, _id } = link;
 	
-	const { delayTrend, jitterTrend, bandwidthTrend, queueTrend } = useMetricsTrends(metrics, updatedAt);
+	// Trend data states - similar to node-detail.tsx
+	const [delayTrend, setDelayTrend] = useState<Array<{ time: string; value: number }>>([]);
+	const [jitterTrend, setJitterTrend] = useState<Array<{ time: string; value: number }>>([]);
+	const [bandwidthTrend, setBandwidthTrend] = useState<Array<{ time: string; value: number }>>([]);
+	const [queueTrend, setQueueTrend] = useState<Array<{ time: string; value: number }>>([]);
+
+	// Update trends when metrics change
+	useEffect(() => {
+		if (!metrics) return;
+		const now = new Date().toISOString();
+
+		if (metrics.delayMs !== undefined) {
+			setDelayTrend(prev => {
+				const lastValue = prev[prev.length - 1]?.value;
+				if (lastValue !== metrics.delayMs) {
+					return [...prev, { time: now, value: metrics.delayMs! }].slice(-24);
+				}
+				return prev;
+			});
+		}
+		if (metrics.jitterMs !== undefined) {
+			setJitterTrend(prev => {
+				const lastValue = prev[prev.length - 1]?.value;
+				if (lastValue !== metrics.jitterMs) {
+					return [...prev, { time: now, value: metrics.jitterMs! }].slice(-24);
+				}
+				return prev;
+			});
+		}
+		if (metrics.bandwidthMbps !== undefined) {
+			setBandwidthTrend(prev => {
+				const lastValue = prev[prev.length - 1]?.value;
+				if (lastValue !== metrics.bandwidthMbps) {
+					return [...prev, { time: now, value: metrics.bandwidthMbps! }].slice(-24);
+				}
+				return prev;
+			});
+		}
+		if (metrics.queueLength !== undefined) {
+			setQueueTrend(prev => {
+				const lastValue = prev[prev.length - 1]?.value;
+				if (lastValue !== metrics.queueLength) {
+					return [...prev, { time: now, value: metrics.queueLength! }].slice(-24);
+				}
+				return prev;
+			});
+		}
+	}, [metrics]);
 
 	const formatMetricValue = (value: number | null | undefined, unit: string) => {
 		if (value === null || value === undefined) return '-';
@@ -51,93 +95,89 @@ export default function LinkDetail({ link }: LinkDetailProps) {
 		return `${value.toFixed(2)} Mbps`;
 	};
 
-	const chartConfig = {
-		delay: {
-			label: "Delay",
-			color: "hsl(var(--chart-1))",
+	const trendSections = [
+		{
+			icon: Clock,
+			iconColor: 'text-blue-500',
+			label: 'Delay',
+			data: delayTrend,
+			color: '#3b82f6',
+			unit: ' ms',
 		},
-		jitter: {
-			label: "Jitter", 
-			color: "hsl(var(--chart-2))",
+		{
+			icon: Signal,
+			iconColor: 'text-orange-500',
+			label: 'Jitter',
+			data: jitterTrend,
+			color: '#f97316',
+			unit: ' ms',
 		},
-		bandwidth: {
-			label: "Bandwidth",
-			color: "hsl(var(--chart-3))",
+		{
+			icon: Zap,
+			iconColor: 'text-green-500',
+			label: 'Bandwidth',
+			data: bandwidthTrend,
+			color: '#22c55e',
+			unit: ' Mbps',
 		},
-		queue: {
-			label: "Queue",
-			color: "hsl(var(--chart-4))",
+		{
+			icon: List,
+			iconColor: 'text-purple-500',
+			label: 'Queue Length',
+			data: queueTrend,
+			color: '#a855f7',
+			unit: '',
 		},
-	} satisfies ChartConfig;
+	];
 
 	return (
 		<Card className="w-full mb-4">
-			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
-					<CardTitle className="text-lg font-bold flex items-center gap-2">
-						<Wifi className="h-5 w-5" />
-						{srcNodeName} → {destNodeName}
-					</CardTitle>
-					<Badge variant={getStatusColor(available)} className="flex items-center gap-1">
-						<Activity className="h-3 w-3" />
-						{available ? 'UP' : 'DOWN'}
-					</Badge>
-				</div>
-				<div className="text-xs text-muted-foreground font-mono">
-					ID: {_id}
-				</div>
-			</CardHeader>
+			<EntityHeader
+				icon={Wifi}
+				title={`${srcNodeName} → ${destNodeName}`}
+				status={available ? 'UP' : 'DOWN'}
+				statusVariant={getStatusColor(available)}
+				id={_id || 'N/A'}
+			/>
 			
 			<CardContent className="space-y-4">
 				{/* Metrics Grid */}
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-					<div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-						<Clock className="h-4 w-4 text-blue-500" />
-						<div>
-							<div className="text-xs text-muted-foreground">Delay</div>
-							<div className="font-mono text-sm font-medium">
-								{formatMetricValue(metrics.delay_ms, 'ms')}
-							</div>
-						</div>
-					</div>
+					<MetricCard
+						icon={Clock}
+						iconColor="text-blue-500"
+						label="Delay"
+						value={formatMetricValue(metrics.delayMs, 'ms')}
+					/>
 					
-					<div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-						<Signal className="h-4 w-4 text-orange-500" />
-						<div>
-							<div className="text-xs text-muted-foreground">Jitter</div>
-							<div className="font-mono text-sm font-medium">
-								{formatMetricValue(metrics.jitter_ms, 'ms')}
-							</div>
-						</div>
-					</div>
+					<MetricCard
+						icon={Signal}
+						iconColor="text-orange-500"
+						label="Jitter"
+						value={formatMetricValue(metrics.jitterMs, 'ms')}
+					/>
 					
-					<div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-						<Zap className="h-4 w-4 text-green-500" />
-						<div>
-							<div className="text-xs text-muted-foreground">Bandwidth</div>
-							<div className="font-mono text-sm font-medium">
-								{formatBandwidth(metrics.bandwidth_mbps)}
-							</div>
-						</div>
-					</div>
+					<MetricCard
+						icon={Zap}
+						iconColor="text-green-500"
+						label="Bandwidth"
+						value={formatBandwidth(metrics.bandwidthMbps)}
+					/>
 					
-					<div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-						<List className="h-4 w-4 text-purple-500" />
-						<div>
-							<div className="text-xs text-muted-foreground">Queue</div>
-							<div className="font-mono text-sm font-medium">
-								{formatMetricValue(metrics.queue_length, '')}
-							</div>
-						</div>
-					</div>
+					<MetricCard
+						icon={List}
+						iconColor="text-purple-500"
+						label="Queue"
+						value={formatMetricValue(metrics.queueLength, '')}
+					/>
 				</div>
 
 				{/* Loss Rate */}
-				{metrics.loss_rate !== null && metrics.loss_rate !== undefined && (
+				{metrics.lossRate !== null && metrics.lossRate !== undefined && (
 					<div className="p-3 bg-muted/50 rounded-lg">
 						<div className="text-xs text-muted-foreground">Loss Rate</div>
 						<div className="font-mono text-sm font-medium">
-							{(metrics.loss_rate * 100).toFixed(2)}%
+							{(metrics.lossRate * 100).toFixed(2)}%
 						</div>
 					</div>
 				)}
@@ -150,183 +190,12 @@ export default function LinkDetail({ link }: LinkDetailProps) {
 				</div>
 
 				{/* Charts Toggle */}
-				<div className="border-t pt-3">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() => setShowCharts(!showCharts)}
-						className="text-xs"
-					>
-						{showCharts ? (
-							<><ChevronDown className="h-3 w-3 mr-1" /> Hide Trends</>
-						) : (
-							<><ChevronRight className="h-3 w-3 mr-1" /> Show Trends</>
-						)}
-						<TrendingUp className="h-3 w-3 ml-1" />
-					</Button>
-					
-					{showCharts && (
-						<div className="mt-4 space-y-6">
-							{/* Top row: Delay & Jitter */}
-							<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-								{/* Delay Chart */}
-								<div className="space-y-2">
-									<h4 className="text-sm font-medium flex items-center gap-2">
-										<Clock className="h-4 w-4 text-blue-500" />
-										Delay Trend (2min)
-									</h4>
-									<ChartContainer config={chartConfig} className="h-[150px]">
-										<ResponsiveContainer width="100%" height="100%">
-											<LineChart data={delayTrend} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-												<XAxis 
-													dataKey="time" 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													interval={3} // Show every 4th tick (20 seconds apart)
-												/>
-												<YAxis 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													width={35}
-												/>
-												<ChartTooltip
-													content={<ChartTooltipContent indicator="line" />}
-													formatter={(value) => [`${value} ms`, 'Delay']}
-												/>
-												<Line 
-													type="monotone" 
-													dataKey="value" 
-													stroke="var(--color-chart-1)" 
-													strokeWidth={2}
-													dot={false}
-												/>
-											</LineChart>
-										</ResponsiveContainer>
-									</ChartContainer>
-								</div>
-
-								{/* Jitter Chart */}
-								<div className="space-y-2">
-									<h4 className="text-sm font-medium flex items-center gap-2">
-										<Signal className="h-4 w-4 text-orange-500" />
-										Jitter Trend (2min)
-									</h4>
-									<ChartContainer config={chartConfig} className="h-[150px]">
-										<ResponsiveContainer width="100%" height="100%">
-											<LineChart data={jitterTrend} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-												<XAxis 
-													dataKey="time" 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													interval={3} // Show every 4th tick (20 seconds apart)
-												/>
-												<YAxis 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													width={35}
-												/>
-												<ChartTooltip
-													content={<ChartTooltipContent indicator="line" />}
-													formatter={(value) => [`${value} ms`, 'Jitter']}
-												/>
-												<Line 
-													type="monotone" 
-													dataKey="value" 
-													stroke="var(--color-chart-2)" 
-													strokeWidth={2}
-													dot={false}
-												/>
-											</LineChart>
-										</ResponsiveContainer>
-									</ChartContainer>
-								</div>
-							</div>
-
-							{/* Bottom row: Bandwidth & Queue */}
-							<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-								{/* Bandwidth Chart */}
-								<div className="space-y-2">
-									<h4 className="text-sm font-medium flex items-center gap-2">
-										<Zap className="h-4 w-4 text-green-500" />
-										Bandwidth Trend (2min)
-									</h4>
-									<ChartContainer config={chartConfig} className="h-[150px]">
-										<ResponsiveContainer width="100%" height="100%">
-											<LineChart data={bandwidthTrend} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-												<XAxis 
-													dataKey="time" 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													interval={3} // Show every 4th tick (20 seconds apart)
-												/>
-												<YAxis 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													width={35}
-												/>
-												<ChartTooltip
-													content={<ChartTooltipContent indicator="line" />}
-													formatter={(value) => [`${value} Mbps`, 'Bandwidth']}
-												/>
-												<Line 
-													type="monotone" 
-													dataKey="value" 
-													stroke="var(--color-chart-3)" 
-													strokeWidth={2}
-													dot={false}
-												/>
-											</LineChart>
-										</ResponsiveContainer>
-									</ChartContainer>
-								</div>
-
-								{/* Queue Chart */}
-								<div className="space-y-2">
-									<h4 className="text-sm font-medium flex items-center gap-2">
-										<List className="h-4 w-4 text-purple-500" />
-										Queue Length Trend (2min)
-									</h4>
-									<ChartContainer config={chartConfig} className="h-[150px]">
-										<ResponsiveContainer width="100%" height="100%">
-											<LineChart data={queueTrend} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-												<XAxis 
-													dataKey="time" 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													interval={3} // Show every 4th tick (20 seconds apart)
-												/>
-												<YAxis 
-													tick={{ fontSize: 9 }}
-													axisLine={false}
-													tickLine={false}
-													width={35}
-												/>
-												<ChartTooltip
-													content={<ChartTooltipContent indicator="line" />}
-													formatter={(value) => [value, 'Queue Length']}
-												/>
-												<Line 
-													type="monotone" 
-													dataKey="value" 
-													stroke="var(--color-chart-4)" 
-													strokeWidth={2}
-													dot={false}
-												/>
-											</LineChart>
-										</ResponsiveContainer>
-									</ChartContainer>
-								</div>
-							</div>
-						</div>
-					)}
-				</div>
+				<TrendsToggle
+					showCharts={showCharts}
+					onToggle={() => setShowCharts(!showCharts)}
+					sections={trendSections}
+					duration="2min"
+				/>
 			</CardContent>
 		</Card>
 	);

@@ -1,22 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Server,
   Globe,
   Clock,
   Cpu,
-  Activity,
   Signal,
   Zap,
-  ChevronDown,
-  ChevronRight,
   TrendingUp,
   ArrowUp,
   ArrowDown,
 } from 'lucide-react';
-import MetricChart from '@/components/charts/metric-chart';
+import EntityHeader from '@/components/shared/entity-header';
+import MetricCard from '@/components/shared/metric-card';
+import TrendsToggle from '@/components/shared/trends-toggle';
 
 interface NodeDetailProps {
   node: {
@@ -116,90 +113,120 @@ export const NodeDetail: React.FC<NodeDetailProps> = ({ node }) => {
   const throughputTrendValue = getTrend(throughputTrend);
   const queueTrendValue = getTrend(queueTrend);
 
+  const trendSections = [
+    {
+      icon: Cpu,
+      iconColor: 'text-red-500',
+      label: 'CPU Load',
+      data: cpuTrend,
+      color: '#ef4444',
+      unit: '%',
+    },
+    {
+      icon: Signal,
+      iconColor: 'text-orange-500',
+      label: 'Jitter',
+      data: jitterTrend,
+      color: '#f97316',
+      unit: 'ms',
+    },
+    {
+      icon: Zap,
+      iconColor: 'text-green-500',
+      label: 'Throughput',
+      data: throughputTrend,
+      color: '#22c55e',
+      unit: ' Mbps',
+    },
+    {
+      icon: TrendingUp,
+      iconColor: 'text-purple-500',
+      label: 'Queue Length',
+      data: queueTrend,
+      color: '#a855f7',
+      unit: '',
+    },
+  ];
+
   return (
     <Card className="w-full mb-3 hover:shadow-md transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold flex items-center gap-2">
-            <Server className="h-5 w-5 text-blue-500" />
-            <span className="mr-1">{getTypeIcon(type)}</span>
-            {name}
-          </CardTitle>
-          <Badge variant={getStatusColor(status)} className="flex items-center gap-1">
-            <Activity className="h-3 w-3 text-green-500" />
-            {status}
-          </Badge>
-        </div>
-        <div className="text-xs text-muted-foreground font-mono">ID: {_id}</div>
-      </CardHeader>
+      <EntityHeader
+        icon={Server}
+        iconColor="text-blue-500"
+        title={name}
+        titlePrefix={<span className="mr-1">{getTypeIcon(type)}</span>}
+        status={status}
+        statusVariant={getStatusColor(status)}
+        id={_id}
+      />
 
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Globe className="h-4 w-4 text-blue-500" />
-            <div>
-              <div className="text-xs text-muted-foreground">IP Address</div>
-              <div className="font-mono text-sm font-medium">{ip}</div>
-            </div>
-          </div>
+          <MetricCard
+            icon={Globe}
+            iconColor="text-blue-500"
+            label="IP Address"
+            value={ip}
+          />
 
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Clock className="h-4 w-4 text-orange-500" />
-            <div>
-              <div className="text-xs text-muted-foreground">Last Updated</div>
-              <div className="text-sm font-medium">
-                {updatedAt ? new Date(updatedAt).toLocaleString() : '-'}
-              </div>
-            </div>
-          </div>
+          <MetricCard
+            icon={Clock}
+            iconColor="text-orange-500"
+            label="Last Updated"
+            value={updatedAt ? new Date(updatedAt).toLocaleString() : '-'}
+          />
         </div>
 
         {metrics && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <Cpu className="h-4 w-4 text-red-500" />
-                <div>
-                  <div className="text-xs text-muted-foreground">CPU Load</div>
-                  <div className="font-mono text-sm font-medium flex items-center">
+              <MetricCard
+                icon={Cpu}
+                iconColor="text-red-500"
+                label="CPU Load"
+                value={
+                  <span className="flex items-center">
                     {formatMetricWithTrend(metrics.cpuLoad, '%', cpuTrendValue).display}
                     {formatMetricWithTrend(metrics.cpuLoad, '%', cpuTrendValue).icon}
-                  </div>
-                </div>
-              </div>
+                  </span>
+                }
+              />
 
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <Signal className="h-4 w-4 text-orange-500" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Jitter</div>
-                  <div className="font-mono text-sm font-medium flex items-center">
+              <MetricCard
+                icon={Signal}
+                iconColor="text-orange-500"
+                label="Jitter"
+                value={
+                  <span className="flex items-center">
                     {formatMetricWithTrend(metrics.jitterMs, 'ms', jitterTrendValue).display}
                     {formatMetricWithTrend(metrics.jitterMs, 'ms', jitterTrendValue).icon}
-                  </div>
-                </div>
-              </div>
+                  </span>
+                }
+              />
 
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <Zap className="h-4 w-4 text-green-500" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Throughput</div>
-                  <div className="font-mono text-sm font-medium flex items-center">
+              <MetricCard
+                icon={Zap}
+                iconColor="text-green-500"
+                label="Throughput"
+                value={
+                  <span className="flex items-center">
                     {formatThroughputWithTrend(metrics.throughputMbps, throughputTrendValue).display}
                     {formatThroughputWithTrend(metrics.throughputMbps, throughputTrendValue).icon}
-                  </div>
-                </div>
-              </div>
+                  </span>
+                }
+              />
 
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-purple-500" />
-                <div>
-                  <div className="text-xs text-muted-foreground">Queue Length</div>
-                  <div className="font-mono text-sm font-medium flex items-center">
+              <MetricCard
+                icon={TrendingUp}
+                iconColor="text-purple-500"
+                label="Queue Length"
+                value={
+                  <span className="flex items-center">
                     {formatMetricWithTrend(metrics.queueLen, '', queueTrendValue).display}
                     {formatMetricWithTrend(metrics.queueLen, '', queueTrendValue).icon}
-                  </div>
-                </div>
-              </div>
+                  </span>
+                }
+              />
             </div>
 
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -208,89 +235,12 @@ export const NodeDetail: React.FC<NodeDetailProps> = ({ node }) => {
               </div>
             </div>
 
-            <div className="border-t pt-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCharts(!showCharts)}
-                className="text-xs"
-              >
-                {showCharts ? (
-                  <>
-                    <ChevronDown className="h-3 w-3 mr-1" /> Hide Trends
-                  </>
-                ) : (
-                  <>
-                    <ChevronRight className="h-3 w-3 mr-1" /> Show Trends
-                  </>
-                )}
-                <TrendingUp className="h-3 w-3 ml-1" />
-              </Button>
-
-              {showCharts && (
-                <div className="mt-4 space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium flex items-center gap-2">
-                        <Cpu className="h-4 w-4 text-red-500" />
-                        CPU Load Trend (5min)
-                      </h4>
-                      <MetricChart
-                        data={cpuTrend}
-                        title="CPU Load"
-                        color="#ef4444"
-                        unit="%"
-                        height={150}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium flex items-center gap-2">
-                        <Signal className="h-4 w-4 text-orange-500" />
-                        Jitter Trend (5min)
-                      </h4>
-                      <MetricChart
-                        data={jitterTrend}
-                        title="Jitter"
-                        color="#f97316"
-                        unit="ms"
-                        height={150}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-green-500" />
-                        Throughput Trend (5min)
-                      </h4>
-                      <MetricChart
-                        data={throughputTrend}
-                        title="Throughput"
-                        color="#22c55e"
-                        unit=" Mbps"
-                        height={150}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-purple-500" />
-                        Queue Length Trend (5min)
-                      </h4>
-                      <MetricChart
-                        data={queueTrend}
-                        title="Queue Length"
-                        color="#a855f7"
-                        unit=""
-                        height={150}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <TrendsToggle
+              showCharts={showCharts}
+              onToggle={() => setShowCharts(!showCharts)}
+              sections={trendSections}
+              duration="5min"
+            />
           </>
         )}
       </CardContent>

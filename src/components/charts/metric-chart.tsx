@@ -69,7 +69,7 @@ export default function MetricChart({
             <Line
               type="monotone"
               dataKey="value"
-              stroke={color}
+              stroke="var(--color-value)"
               strokeWidth={2}
               dot={false}
             />
