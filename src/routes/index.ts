@@ -4,6 +4,7 @@ import NotFound from "@/view/NotFound";
 import { createBrowserRouter } from "react-router";
 import LinkManagement from "@/dashboard/link-management";
 import AlgorithmsManagement from "@/dashboard/algorithims-management";
+import EarthDemo from "@/dashboard/earth-demo";
 
 export const routes = createBrowserRouter([
     {
@@ -21,6 +22,10 @@ export const routes = createBrowserRouter([
             {
                 path: '/algorithms-management',
                 Component: AlgorithmsManagement
+            },
+            {
+                path: '/earth',
+                Component: EarthDemo
             }
         ]
     },
