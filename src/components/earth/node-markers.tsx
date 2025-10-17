@@ -6,10 +6,11 @@ import { latLngToVector3 } from './utils'
 interface NodeMarkersProps {
   nodes: Node[]
   onNodeClick: (node: Node) => void
-  markersGroupRef: React.RefObject<THREE.Group>
+  onNodeHover?: (node: Node | null, event?: PointerEvent) => void
+  markersGroupRef: React.RefObject<THREE.Group | null>
 }
 
-export function NodeMarkers({ nodes, onNodeClick, markersGroupRef }: NodeMarkersProps): JSX.Element {
+export function NodeMarkers({ nodes, onNodeClick, onNodeHover, markersGroupRef }: NodeMarkersProps): JSX.Element {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
   return (
@@ -26,10 +27,16 @@ export function NodeMarkers({ nodes, onNodeClick, markersGroupRef }: NodeMarkers
             onPointerOver={(e) => {
               e.stopPropagation()
               setHoveredNode(node.ip)
+              if (onNodeHover) {
+                onNodeHover(node, e.nativeEvent as PointerEvent)
+              }
             }}
             onPointerOut={(e) => {
               e.stopPropagation()
               setHoveredNode(null)
+              if (onNodeHover) {
+                onNodeHover(null)
+              }
             }}
             onClick={(e) => {
               e.stopPropagation()

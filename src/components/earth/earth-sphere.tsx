@@ -1,15 +1,15 @@
-import { useRef, useState, type JSX } from 'react'
+import { useRef, type JSX } from 'react'
 import { useFrame, useLoader } from '@react-three/fiber'
 import * as THREE from 'three'
 import { TextureLoader } from 'three'
 import type { EarthSphereProps } from './types'
-import { latLngToVector3 } from './utils'
+import { NodeMarkers } from './node-markers'
 
-export function EarthSphere({ nodes, onNodeClick }: EarthSphereProps): JSX.Element {
-  const earthRef = useRef<THREE.Mesh | null>(null)
+export function EarthSphere({ nodes, onNodeClick, onNodeHover, earthRef: externalEarthRef }: EarthSphereProps): JSX.Element {
+  const internalEarthRef = useRef<THREE.Mesh | null>(null)
+  const earthRef = externalEarthRef || internalEarthRef
   const cloudsRef = useRef<THREE.Mesh | null>(null)
   const markersGroupRef = useRef<THREE.Group | null>(null)
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null)
 
   // Textures 8K chất lượng cao từ local
   const [colorMap, nightMap, cloudsMap] = useLoader(TextureLoader, [
@@ -56,35 +56,12 @@ export function EarthSphere({ nodes, onNodeClick }: EarthSphereProps): JSX.Eleme
       </mesh>
 
       {/* Node markers - gắn vào group để quay cùng Earth */}
-      <group ref={markersGroupRef}>
-        {nodes.map((node) => {
-          if (typeof node.lat !== 'number' || typeof node.lng !== 'number') return null
-          const position = latLngToVector3(node.lat, node.lng, 3.05)
-          const isHovered = hoveredNode === node.ip
-
-          return (
-            <mesh
-              key={node.ip}
-              position={position}
-              onPointerOver={(e) => {
-                e.stopPropagation()
-                setHoveredNode(node.ip)
-              }}
-              onPointerOut={(e) => {
-                e.stopPropagation()
-                setHoveredNode(null)
-              }}
-              onClick={(e) => {
-                e.stopPropagation()
-                onNodeClick(node)
-              }}
-            >
-              <sphereGeometry args={[isHovered ? 0.03 : 0.02, 16, 16]} />
-              <meshBasicMaterial color={isHovered ? '#ffff00' : '#ff0000'} />
-            </mesh>
-          )
-        })}
-      </group>
+      <NodeMarkers 
+        nodes={nodes}
+        onNodeClick={onNodeClick}
+        onNodeHover={onNodeHover}
+        markersGroupRef={markersGroupRef}
+      />
     </>
   )
 }

@@ -18,7 +18,11 @@ export interface Node {
     [key: string]: any
 }
 
+import * as THREE from 'three'
+
 export interface EarthSphereProps {
     nodes: Node[]
     onNodeClick: (node: Node) => void
+    onNodeHover?: (node: Node | null, event?: PointerEvent) => void
+    earthRef?: React.RefObject<THREE.Mesh | null>
 }

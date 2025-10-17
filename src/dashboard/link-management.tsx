@@ -1,42 +1,44 @@
-import { SocketConnection } from "@/socket/socket";
-import { useEffect, useMemo, useState } from "react";
-import type { Socket } from "socket.io-client";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router";
+import { useLinks } from "@/contexts/network-context";
 import LinkDetail from "@/components/links/link-detail";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 export default function LinkManagement() {
-    const [links, setLinks] = useState<any[]>([]);
+    const { links, loading, error, searchLinks, refreshLinks } = useLinks();
+    const [searchParams] = useSearchParams();
     const [srcQuery, setSrcQuery] = useState("");
     const [destQuery, setDestQuery] = useState("");
 
-    const filtered = useMemo(() => {
-        const s = srcQuery.trim().toLowerCase();
-        const d = destQuery.trim().toLowerCase();
-        return links.filter((l) => {
-            const src = (l.srcNode || "").toLowerCase();
-            const dest = (l.destNode || "").toLowerCase();
-            const srcOk = !s || src.includes(s);
-            const destOk = !d || dest.includes(d);
-            return srcOk && destOk;
-        });
-    }, [links, srcQuery, destQuery]);
-
+    // Lấy search queries từ URL params
     useEffect(() => {
-        const socket: Socket = SocketConnection.getInstance();
-        const handleLinkUpdate = (data: any) => {
-            if (Array.isArray(data)) setLinks(data);
-            else if (data) setLinks([data]);
-        };
-        socket.on("link-updated", handleLinkUpdate);
-        socket.emit("get-links");
-        return () => {
-            socket.off("link-updated", handleLinkUpdate);
-        };
-    }, []);
+        const src = searchParams.get('src');
+        const dest = searchParams.get('dest');
+        if (src) setSrcQuery(src);
+        if (dest) setDestQuery(dest);
+    }, [searchParams]);
+
+    const filtered = useMemo(() => {
+        return searchLinks(srcQuery, destQuery);
+    }, [srcQuery, destQuery, searchLinks]);
 
     return (
         <div className="flex flex-col gap-4 p-4">
             <div className="bg-muted/50 rounded-xl p-6 min-h-[70vh] w-full">
-                <h2 className="text-xl font-bold mb-4">Links Management</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Links Management</h2>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={refreshLinks}
+                        disabled={loading}
+                    >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                </div>
+
                 <div className="flex flex-col md:flex-row gap-3 mb-4">
                     <input
                         type="text"
@@ -53,10 +55,38 @@ export default function LinkManagement() {
                         className="w-full md:w-1/2 px-3 py-2 border rounded-md focus:outline-none focus:ring"
                     />
                 </div>
-                {filtered.length > 0 ? (
+
+                {error && (
+                    <div className="text-destructive mb-4 p-3 bg-destructive/10 rounded-md">
+                        Error: {error}
+                    </div>
+                )}
+
+                {loading && links.length === 0 ? (
+                    <div className="text-muted-foreground">Loading links...</div>
+                ) : filtered.length > 0 ? (
                     <div className="grid grid-cols-1">
                         {filtered.map((l) => (
-                            <LinkDetail key={l._id || `${l.srcNode}-${l.destNode}`} link={l} />
+                            <LinkDetail 
+                                key={l._id || `${l.srcNode}-${l.destNode}`} 
+                                link={{
+                                    _id: l._id,
+                                    srcNode: l.srcNode,
+                                    srcNodeName: l.srcNode,
+                                    destNode: l.destNode,
+                                    destNodeName: l.destNode,
+                                    available: l.status !== 'DOWN',
+                                    metrics: {
+                                        bandwidthMbps: l.metrics?.bandwidthMbps,
+                                        delayMs: l.metrics?.delayMs,
+                                        jitterMs: l.metrics?.jitterMs,
+                                        lossRate: l.metrics?.packetLoss,
+                                        queueLength: l.metrics?.queueLength,
+                                    },
+                                    createdAt: l.createdAt,
+                                    updatedAt: l.updatedAt,
+                                }}
+                            />
                         ))}
                     </div>
                 ) : (
