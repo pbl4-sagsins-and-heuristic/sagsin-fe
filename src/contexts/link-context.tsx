@@ -45,7 +45,6 @@ export function LinkProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       if (Array.isArray(data)) {
         setLinks(data)
-        console.log('Links updated:', data)
       } else if (data) {
         setLinks((prev) => {
           const existing = prev.find((l) => l._id === data._id)
