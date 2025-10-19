@@ -24,7 +24,7 @@ export const routes = createBrowserRouter([
                 Component: AlgorithmsManagement
             },
             {
-                path: '/earth',
+                path: '/',
                 Component: EarthDemo
             }
         ]

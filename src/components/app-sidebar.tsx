@@ -24,10 +24,10 @@ const data = {
       url: "/",
       isActive: true,
       items: [
+        { title: "Earth", url: "/", isActive: true },
         { title: "Nodes management", url: "/nodes-management", isActive: true },
         { title: "Links management", url: "/links-management", isActive: true },
         { title: "Algorithms management", url: "/algorithms-management", isActive: true },
-        { title: "Earth", url: "/earth", isActive: true }
       ],
     }
   ],
