@@ -28,6 +28,7 @@ const data = {
         { title: "Nodes management", url: "/nodes-management", isActive: true },
         { title: "Links management", url: "/links-management", isActive: true },
         { title: "Algorithms management", url: "/algorithms-management", isActive: true },
+        { title: "Timelines management", url: "/timelines-management", isActive: true },
       ],
     }
   ],
