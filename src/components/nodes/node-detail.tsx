@@ -36,7 +36,7 @@ interface NodeDetailProps {
 
 export const NodeDetail: React.FC<NodeDetailProps> = ({ node }) => {
   const [showCharts, setShowCharts] = useState(false);
-  const { name, ip, hostname, status, type, metrics, updatedAt, _id } = node;
+  const { name, ip, status, type, metrics, updatedAt, _id } = node;
 
   const formatMetricWithTrend = (
     value: number | null | undefined,
